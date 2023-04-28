@@ -1,102 +1,119 @@
-class Figura {
-   constructor(x, y, alto, ancho, vx, vy) {
-    this.posicion = createVector(x,y);
-    this.alto = alto;
-    this.ancho = ancho;
-    this.fillred = 255;
-    this.fillgreen = 87;
-    this.fillblue = 57;
-    this.velocidad = createVector(vx,vy);
-  }
-  update()
-  {
-      if (this.posicion.x + this.ancho >= 400)
-        {  
-          let valor = random(3); 
-          this.velocidad.x = this.velocidad.x * -valor;
-         this.velocidad.y = this.velocidad.y * -valor;
-        }
-      this.posicion.add(this.velocidad);
-  }
-  
-}
+let tcanvas = 400; // tamaño del canvas
+let t = 20; //t=tamaño de celdas
+let ncel = tcanvas/t; //numcel = numero de celdas
+let laberinto = []; //array laberinto
 
-class Rectangulo extends Figura{
-  constructor(x, y, alto, ancho, vx, vy) {
-      super(x, y, alto, ancho, vx, vy);
-  }
-  
-draw()
-  {
-fill(this.fillred,this.fillgreen,this.fillblue);
-rect(this.posicion.x,this.posicion.y,this.alto,this.ancho);
-  }
-}
+//Posiciones
 
-class Elipse extends Figura{
-  constructor(x, y, alto, ancho, vx, vy) {
-      super(x, y, alto, ancho, vx, vy);
-  }
-  
-draw()
-  {
-fill(this.fillred,this.fillgreen,this.fillblue);
-ellipse(this.posicion.x,this.posicion.y,this.alto,this.ancho);
-  }
-}
+//Jugador
+let posx = 0;
+let posy = 0;
 
-var figuras = [];
-var dibujando = 'circulo';
-var btnCirculo = null;
-var btnRectangulo = null;
-
-
-function mouseClicked() {
-  // Se crea un objeto según la opción actual
-if (mouseY > 25)
-  {
-  if (dibujando == 'circulo')
-    figuras.push(new Elipse(mouseX,mouseY,20,20,3,1));
-  else if (dibujando == 'rectangulo')
-    figuras.push(new Rectangulo(mouseX,mouseY,20,20,2,1));
-  }
-
-  return false;
-}
+//Meta
+let metax;
+let metay;
 
 function setup() {
-  createCanvas(400, 400);
+  createCanvas(tcanvas, tcanvas);
+  noStroke(); //No bordes dibujados
   
-  btnCirculo = createButton('Circulo');
-  btnCirculo.position(0, 0);
-  btnCirculo.mousePressed(changeCirculo);
-  btnCirculo.style( 'background-color','#cccccc');
+  //pared
+  laberinto = [];
+  for (let x = 0;x<ncel;x+=1)
+    {
+      laberinto[x] = [];
+      for (let y=0;y<ncel;y+=1)
+        {
+          laberinto[x][y] = 0; //generacion de laberinto
+        }
+    }
+  console.table(laberinto);
+  //Definir laberinto
+    for (let x = 0;x<ncel;x+=2)
+    {
+      for (let y=0;y<ncel;y+=2)
+        {
+          laberinto[x][y] = 1;
+          let vecinos = [];
+          if (x<ncel) {vecinos.push({x: x+1,y:y})}
+          if (y<ncel) {vecinos.push({x: x,y:y+1})}
+          if (vecinos.length>0) 
+            {
+              let ve = vecinos[int(random(2))]; //vecino escogido
+              laberinto[ve.x][ve.y] = 1;
+            }
+        }
+    }
   
-  btnRectangulo = createButton('Rectangulo');
-  btnRectangulo.position(75, 0);
-  btnRectangulo.mousePressed(changeRectangulo);
+  metax = int(random(ncel/2))*2; //asegurar que la meta sea en piso y no en pared
+  metay = int(random(ncel/2))*2;
 }
-
-function changeCirculo()
-   {
-     btnCirculo.style( 'background-color','#cccccc');
-     btnRectangulo.style( 'background-color','#f0f0f0');
-     dibujando = 'circulo';
-   }
-function changeRectangulo()
-   {
-     btnRectangulo.style( 'background-color','#cccccc');
-     btnCirculo.style( 'background-color','#f0f0f0');
-     dibujando = 'rectangulo';
-   }
-
- 
-
+//dibujar
 function draw() {
   background(220);
-  figuras.forEach((fig) => 
-   {
-    fig.draw();
-    fig.update();
-   });
+  
+  
+  //laberinto relleno piso
+ for (let x = 0;x<ncel;x+=1)
+    {
+      for (let y=0;y<ncel;y+=1)
+        {
+          if (laberinto[x][y]==0)
+            {
+              fill(0);
+            } else if (laberinto[x][y] == 1)
+              {
+                fill(255);
+              }
+          rect(x*t,y*t,t,t);
+        }
+    }
+  //dibujar
+
+  //Jugador
+  fill(0, 255, 0);
+  rect(posx*t, posy*t, t, t);
+  //meta
+  fill (255, 0, 0);
+  rect(metax*t,metay*t, t, t);
+  
+  //mensaje
+  if (posx==metax && posy==metay)
+    {
+      textSize(50);
+      text("Haz ganado", 50, tcanvas/2);
+    }
+}
+
+function keyPressed()
+{
+  if (keyCode == LEFT_ARROW && posx>0)
+  {
+    if (laberinto[posx-1][posy]!=0)
+      {
+        posx -= 1; 
+      }
+
+  }
+  else if (keyCode == RIGHT_ARROW && posx<ncel-1)
+  {
+    if (laberinto[posx+1][posy]!=0)
+      {
+        posx += 1;
+      }
+  }
+  else if(keyCode == UP_ARROW && posy>0)
+  {
+    if (laberinto[posx][posy-1]!=0)
+      {
+        posy -= 1;
+      }
+  }
+  else if(keyCode == DOWN_ARROW && posy<ncel-1)
+  {
+    if (laberinto[posx][posy+1]!=0)
+    {
+      posy += 1;
+    }
+  }
 }
